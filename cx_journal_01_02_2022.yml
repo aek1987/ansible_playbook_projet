@@ -1,0 +1,133 @@
+- hosts: test , group1 , failed_hosts  #all_hosts ,   #  # failed_hosts # all_hosts, group1 , 
+ 
+  
+  gather_facts: false
+  tasks:
+    - name: executer la commande ping
+      delegate_to: localhost
+      command: ping -c1 "{{ hostvars[inventory_hostname].ansible_host|default(inventory_hostname) }}"
+      register: ping
+      ignore_errors: true
+
+    - name: ecrire sur le fichier :hosts des ping echoué
+      lineinfile:
+         line: "{{ inventory_hostname  }}"
+         dest: ./offline_hostname.txt
+         state: present
+         create: true
+      delegate_to: 127.0.0.1
+      when: ping.rc == 1
+      
+    - name: executer la commande ssh
+      delegate_to: localhost
+      command: ssh  syuser@"{{ hostvars[inventory_hostname].ansible_host|default(inventory_hostname) }}" echo ok
+      register: user_enabled
+      ignore_errors: true
+      when: ping.rc == 0
+       
+    - name: ecrire sur le fichier  ssh_failed_hostname
+      lineinfile:
+         line: "{{ inventory_hostname }}"
+         dest: ./ssh_failed_hostname.txt
+         state: present
+         create: true
+      delegate_to: 127.0.0.1
+      when: ping.rc == 0 and user_enabled.stdout != "ok"  
+     
+    ## list des taches a executer ; condition de  ping et ssh 
+
+     #################### *****1- renomer****" ##########################
+
+    - name: renomer  mon_programme   mon_programme.exe
+      command:  mv  /chemein/travail/mon_programme exe  /chemein/travail/mon_programme _01_02_2022exe #******
+      become: true
+      become_user: root
+      when: ping.rc == 0  and user_enabled.stdout == "ok" 
+         
+   
+      
+     ####################### 2- copier /home/syuser   ##########################
+
+    - name: copier le  fichier  mon_programme exe   dans /home/syuser
+      copy:
+            src: /home/deploy/ftp_file/mon_programme exe
+            dest: /home/syuser/mon_programme exe
+            owner: syuser
+            group: wheel
+            mode: 0644  
+
+      when: ping.rc == 0  and user_enabled.stdout == "ok"
+
+   #######################  3-copier /home/syuser les formes  ##########################
+
+    - name: copier le  fichier  form_ctx2022.tgz   dans /home/syuser
+      copy:
+            src: /home/deploy/ftp_file/f_normal.frm
+            dest: /home/syuser/f_normal.frm
+            owner: syuser
+            group: wheel
+            mode: 0644  
+
+      when: ping.rc == 0  and user_enabled.stdout == "ok"
+
+
+    ######################   4- copier /home/syuser    /chemein/travail..  journal ###################################
+    
+
+    - name: cp /home/syuser/mon_programme exe  vers  /chemein/travail/mon_programme exe 
+      command: cp /home/syuser/mon_programme exe /chemein/travail/mon_programme exe 
+      become: true
+      become_user: root
+
+      when: ping.rc == 0  and user_enabled.stdout == "ok"
+     ####################### 5- copier /home/syuser    /chemein/travail/..  la forme ###################################
+    
+
+    - name: cp /home/syuser/f_normal.frm  vers  /chemein/travail/f_normal.frm
+      command: cp /home/syuser/f_normal.frm  /chemein/travail/f_normal.frm
+      become: true
+      become_user: root
+
+      when: ping.rc == 0  and user_enabled.stdout == "ok"
+
+      
+     #################### ***6-   donner la permission **** ############################
+    
+    - name: donnez la permission d'execution
+      command: chmod +x  /chemein/travail/mon_programme exe
+      become: true
+      become_user: root
+      when: ping.rc == 0  and user_enabled.stdout == "ok" 
+
+    
+   
+      ####################*** - 7- changer le group declarat    ***** #########################
+
+    - name: changer le group   -g declarat
+      command: chgrp declarat  /chemein/travail/mon_programme exe
+      become: true
+      become_user: root
+      when: ping.rc == 0  and user_enabled.stdout == "ok" 
+
+
+
+
+   
+
+   
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
+     
